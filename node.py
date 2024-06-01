@@ -321,19 +321,25 @@ class GroundingDinoSAMSegment:
                 threshold
             )
             if boxes.shape[0] == 0:
-                break
-            (images, masks) = sam_segment(
-                sam_model,
-                item,
-                boxes
-            )
+                (images, masks) = self.empty_tuple(item)
+            else:
+                (images, masks) = sam_segment(
+                    sam_model,
+                    item,
+                    boxes
+                )
             res_images.extend(images)
             res_masks.extend(masks)
-        if len(res_images) == 0:
-            _, height, width, _ = image.size()
-            empty_mask = torch.zeros((1, height, width), dtype=torch.uint8, device="cpu")
-            return (empty_mask, empty_mask)
         return (torch.cat(res_images, dim=0), torch.cat(res_masks, dim=0))
+
+    def empty_tuple(self, image: Image.Image) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+        """
+        Create an empty image + mask with shapes that match the output of sam_segment()
+        """
+        width, height = image.size
+        empty_image = torch.zeros((1, height, width, 3), dtype=torch.uint8, device="cpu")
+        empty_mask = torch.zeros((1, height, width), dtype=torch.uint8, device="cpu")
+        return ([empty_image], [empty_mask])
 
 
 class InvertMask:
